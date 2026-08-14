@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="mb-4">
+    <div class="text-sm mb-1">Voting Progress</div>
+    <div class="w-full bg-gray-200 rounded-full h-2.5">
+      <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ progress }}%"></div>
+    </div>
+    <div class="text-xs text-gray-600 mt-1">Page {{ position_index + 1 }} of {{ total_positions }}</div>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow p-6">
+    <div class="flex items-start justify-between mb-4">
+      <div>
+        <h2 class="text-xl font-semibold">{{ position.name }}</h2>
+        <p class="text-sm text-gray-600">Select exactly <span class="font-bold">{{ position.max_selection }}</span>.</p>
+      </div>
+      <div class="text-sm text-gray-500">
+        {{ student.first_name }} {{ student.last_name }}<br>
+        {{ student.section }} • Year {{ student.year_level }}
+      </div>
+    </div>
+
+    <form method="post" class="space-y-4">
+      <div class="grid sm:grid-cols-2 gap-4">
+        {% for c in candidates %}
+        <label class="border rounded-xl p-4 flex items-start gap-3 hover:border-blue-400 cursor-pointer">
+          <input type="checkbox" name="candidates" value="{{ c.id }}" class="mt-1"
+                 {% if c.id in selected %}checked{% endif %}>
+          <div class="flex gap-3">
+            <img src="{{ url_for('static', filename='images/' ~ (c.image or 'placeholder.png')) }}" alt="{{ c.full_name }}" class="w-16 h-16 rounded-xl object-cover border">
+            <div>
+              <div class="font-semibold">{{ c.full_name }}</div>
+              <div class="text-xs text-gray-600">{% if c.partylist_id %}{{ c.partylist.name }}{% else %}Independent{% endif %}</div>
+              {% if c.tagline %}<div class="text-xs text-gray-700 mt-1 italic">&ldquo;{{ c.tagline }}&rdquo;</div>{% endif %}
+            </div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div class="flex items-center justify-between pt-4">
+        <button name="prev" value="1" class="px-4 py-2 rounded-lg border hover:bg-gray-50" {% if position_index == 0 %}disabled{% endif %}>← Previous</button>
+        <button class="px-4 py-2 rounded-lg bg-blue-700 text-white hover:bg-blue-800">{% if position_index + 1 == total_positions %}Review Ballot{% else %}Next →{% endif %}</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

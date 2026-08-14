@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Logout button at the top right -->
+<div class="flex justify-end mb-4">
+  <a href="{{ url_for('admin_logout') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
+    Logout
+  </a>
+</div>
+<!-- Logout button at the top right -->
+<div class="flex justify-end mb-4">
+  <a href="{{ url_for('admin_logout') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
+    Logout
+  </a>
+</div>
+<div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow">
+  <h2 class="text-xl font-semibold mb-4">Import CSV</h2>
+
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    <div>
+      <label class="text-sm">Data Type</label>
+      <select name="data_type" class="mt-1 w-full border rounded px-3 py-2">
+        <option value="students">Students</option>
+        <option value="candidates">Candidates</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="text-sm">CSV File</label>
+      <input type="file" name="file" accept=".csv" class="mt-1 w-full" required>
+    </div>
+
+    <button class="px-4 py-2 rounded bg-blue-700 text-white">Upload & Import</button>
+  </form>
+
+  <hr class="my-4">
+
+  <h3 class="font-semibold">Sample CSV formats</h3>
+  <div class="text-xs text-gray-700 mt-2">
+    <b>Students CSV columns:</b> student_number,year_level,section,major,first_name,last_name<br>
+    <b>Candidates CSV columns:</b> first_name,last_name,position,partylist,tagline,image_filename(optional)
+  </div>
+</div>
+{% endblock %}

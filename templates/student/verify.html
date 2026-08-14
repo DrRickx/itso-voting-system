@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="bg-white rounded-2xl shadow p-6">
+    <h2 class="text-xl font-semibold mb-2">Verify Your Ballot</h2>
+    <p class="text-sm text-gray-600 mb-4">Please confirm all selections before submission.</p>
+
+    <div class="space-y-4">
+      {% for position, selected in ballot_display %}
+        <div class="border rounded-xl p-4">
+          <div class="font-semibold">{{ position.name }}</div>
+          <ul class="text-sm text-gray-700 mt-2 list-disc pl-5">
+            {% for c in selected %}
+              <li>{{ c.full_name }} — {% if c.partylist_id %}{{ c.partylist.name }}{% else %}Independent{% endif %}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    </div>
+
+    <form method="post" class="mt-6 flex items-center justify-between">
+      <a href="{{ url_for('ballot') }}" class="px-4 py-2 rounded-lg border hover:bg-gray-50">Go Back</a>
+      <button class="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700">Confirm &amp; Submit Ballot</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

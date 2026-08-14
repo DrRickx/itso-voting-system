@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ title or "ITSO Voting System" }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/tailwind.css') }}">
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-blue-700 text-white">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <h1 class="text-lg md:text-2xl font-bold">Information Technology Student Organization (ITSO) Voting System</h1>
+      <nav class="text-sm">
+        <a href="{{ url_for('index') }}" class="hover:underline">Home</a> •
+        <a href="{{ url_for('admin_dashboard') }}" class="hover:underline">Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for category, message in messages %}
+            <div class="px-4 py-3 rounded-lg
+              {% if category == 'success' %}bg-green-100 text-green-800
+              {% elif category == 'error' %}bg-red-100 text-red-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="border-t mt-10">
+    <div class="max-w-6xl mx-auto px-4 py-6 text-sm text-gray-500">
+      &copy; ITSO Voting System
+    </div>
+  </footer>
+</body>
+</html>

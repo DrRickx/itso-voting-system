@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white rounded-2xl shadow p-6">
+  <h2 class="text-xl font-semibold mb-4">Voting Progress</h2>
+  <div class="w-full bg-gray-200 rounded-full h-2.5 mb-2">
+    <div class="bg-blue-600 h-2.5 rounded-full" style="width: {{ progress }}%"></div>
+  </div>
+  <p class="text-sm text-gray-600">You have completed {{ progress }}% of your ballot.</p>
+</div>
+{% endblock %}

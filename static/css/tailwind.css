@@ -1,0 +1,15 @@
+/* You can keep this minimal—Tailwind comes from the CDN.
+   Place tiny theme tweaks here to satisfy the "Sandbox - Tailwind Design" requirement. */
+
+:root {
+  --brand: #1d4ed8; /* blue-700 */
+}
+
+.btn {
+  @apply px-4 py-2 rounded-lg;
+}
+
+.btn-primary {
+  @apply text-white;
+  background: var(--brand);
+}

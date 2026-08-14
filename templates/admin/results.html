@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Logout button at the top right -->
+<div class="flex justify-end mb-4">
+  <a href="{{ url_for('admin_logout') }}" 
+     class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
+    Logout
+  </a>
+</div>
+
+<div class="flex items-center justify-between">
+  <h2 class="text-xl font-semibold">Realtime Overall Results</h2>
+  <a href="{{ url_for('export_excel') }}" 
+     class="px-4 py-2 rounded-lg border hover:bg-gray-50 text-sm">
+    Export to Excel
+  </a>
+</div>
+
+<div class="mt-4 bg-white rounded p-4 mb-6">
+  <canvas id="partylistChart" width="400" height="150"></canvas>
+</div>
+
+<script>
+  window.partylistNames = {{ partylist_names|tojson }};
+  window.partylistVotes = {{ partylist_votes|tojson }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+
+<div class="mt-4 space-y-6">
+  {% for position, counts, total in results %}
+    <div class="bg-white rounded-2xl shadow p-4">
+      <div class="font-semibold mb-2">{{ position.name }}</div>
+      <div class="space-y-3">
+        {% if counts|length > 0 %}
+          {% for c, v in counts %}
+            {% set pct = (v / total * 100) if total > 0 else 0 %}
+            <div>
+              <div class="flex items-center justify-between text-sm mb-1">
+                <div>
+                  {{ c.full_name }} —
+                  {% if c.partylist_id %}
+                    {{ c.partylist.name }}
+                  {% else %}
+                    Independent
+                  {% endif %}
+                </div>
+                <div class="text-gray-600">{{ v }} vote{{ '' if v==1 else 's' }}</div>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                     style="width: {{ "%.2f"|format(pct) }}%">
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="text-sm text-gray-600">No candidates.</div>
+        {% endif %}
+      </div>
+      <div class="text-xs text-gray-500 mt-2">Total votes for this position: {{ total }}</div>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

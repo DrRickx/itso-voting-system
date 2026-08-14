@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-6 items-center">
+  <div class="bg-white p-6 rounded-2xl shadow">
+    <h2 class="text-xl md:text-2xl font-semibold mb-4">Voter Sign-in</h2>
+    <form method="post" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium">Student Number</label>
+        <input name="student_number" placeholder="25-BGU-01234"
+               class="mt-1 w-full border rounded-lg px-3 py-2" required />
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium">Year Level</label>
+          <select name="year_level" class="mt-1 w-full border rounded-lg px-3 py-2" required>
+            <option value="">-- Select --</option>
+            <option value="1">1st Year</option>
+            <option value="2">2nd Year</option>
+            <option value="3">3rd Year</option>
+            <option value="4">4th Year</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Section</label>
+          <input name="section" placeholder="BSIT 4-1" class="mt-1 w-full border rounded-lg px-3 py-2" required />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium">Major</label>
+        <select name="major" class="mt-1 w-full border rounded-lg px-3 py-2" required>
+          <option value="">-- Select --</option>
+          <option>Data Analytics</option>
+          <option>Web &amp; Mobile Technology</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium">First Name</label>
+          <input name="first_name" class="mt-1 w-full border rounded-lg px-3 py-2" required />
+        </div>
+        <div>
+          <label class="block text-sm font-medium">Last Name</label>
+          <input name="last_name" class="mt-1 w-full border rounded-lg px-3 py-2" required />
+        </div>
+      </div>
+      <button class="w-full py-2.5 rounded-lg bg-blue-700 text-white font-medium hover:bg-blue-800">Start Voting</button>
+    </form>
+  </div>
+
+  <div class="p-4">
+    <div class="bg-blue-50 border border-blue-200 p-6 rounded-2xl">
+      <h3 class="text-lg font-semibold mb-2">Welcome to ITSO Voting</h3>
+      <p class="text-sm text-gray-700">Cast your ballot securely. You’ll be guided position-by-position, see your progress, and verify before submitting.</p>
+      <ul class="mt-4 text-sm list-disc pl-5 space-y-1 text-gray-700">
+        <li>One vote per student (student number verified)</li>
+        <li>Year-based representative positions auto-filtered</li>
+        <li>Strict selection counts enforced</li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<!-- Logout button at the top right -->
+<div class="flex justify-end mb-4">
+  <a href="{{ url_for('admin_logout') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition">
+    Logout
+  </a>
+</div>
+<div class="bg-white rounded-2xl shadow p-6">
+  <h2 class="text-xl font-semibold mb-4">Students</h2>
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-600">
+          <th class="py-2 pr-4">Student No.</th>
+          <th class="py-2 pr-4">Name</th>
+          <th class="py-2 pr-4">Year</th>
+          <th class="py-2 pr-4">Section</th>
+          <th class="py-2 pr-4">Major</th>
+          <th class="py-2 pr-4">Voted?</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for s in students %}
+          <tr>
+            <td class="py-2 pr-4">{{ s.student_number }}</td>
+            <td class="py-2 pr-4">{{ s.last_name }}, {{ s.first_name }}</td>
+            <td class="py-2 pr-4">{{ s.year_level }}</td>
+            <td class="py-2 pr-4">{{ s.section }}</td>
+            <td class="py-2 pr-4">{{ s.major }}</td>
+            <td class="py-2 pr-4">
+              {% if s.has_voted %}
+                <span class="px-2 py-0.5 rounded-full bg-green-100 text-green-700">Yes</span>
+              {% else %}
+                <span class="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">No</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="6" class="py-4 text-gray-600">No students yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
