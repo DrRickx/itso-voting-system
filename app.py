@@ -1,3 +1,7 @@
+from utils.csv_importer import import_students, import_candidates
+from utils.audit_logger import log_action
+from flask_migrate import Migrate
+from models import db, Admin, Student, Partylist, Position, Candidate, Vote, AuditLog
 import os
 from functools import wraps
 from datetime import datetime
@@ -16,26 +20,26 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # import db and models
-from models import db, Admin, Student, Partylist, Position, Candidate, Vote, AuditLog
 db.init_app(app)
 
 # Migrations
-from flask_migrate import Migrate
 migrate = Migrate(app, db)
 
 # utils
-from utils.audit_logger import log_action
-from utils.csv_importer import import_students, import_candidates
 
 # helpers
+
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in app.config["ALLOWED_EXTENSIONS"]
+
 
 def ensure_ballot_session():
     if "ballot" not in session:
         session["ballot"] = {}
     if "position_index" not in session:
         session["position_index"] = 0
+
 
 def get_positions_for_student(student):
     q = Position.query.order_by(Position.sort_order.asc(), Position.id.asc())
@@ -45,6 +49,7 @@ def get_positions_for_student(student):
         if p.eligible_year is None or p.eligible_year == student.year_level:
             filtered.append(p)
     return filtered
+
 
 def count_progress(student, positions):
     ensure_ballot_session()
@@ -61,6 +66,8 @@ def count_progress(student, positions):
 # ----------------------
 # Admin auth decorator
 # ----------------------
+
+
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -71,6 +78,8 @@ def admin_required(f):
     return decorated
 
 # ---------- Student Routes ----------
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
@@ -112,6 +121,7 @@ def index():
         return redirect(url_for("ballot"))
     return render_template("index.html")
 
+
 @app.route("/ballot", methods=["GET", "POST"])
 def ballot():
     student_id = session.get("student_id")
@@ -127,12 +137,14 @@ def ballot():
 
     position_index = max(0, min(position_index, len(positions)-1))
     position = positions[position_index]
-    candidates = Candidate.query.filter_by(position_id=position.id).order_by(Candidate.last_name.asc()).all()
+    candidates = Candidate.query.filter_by(
+        position_id=position.id).order_by(Candidate.last_name.asc()).all()
 
     if request.method == "POST":
         selected_ids = request.form.getlist("candidates")
         if len(selected_ids) != position.max_selection:
-            flash(f"You must select exactly {position.max_selection} for {position.name}.", "error")
+            flash(
+                f"You must select exactly {position.max_selection} for {position.name}.", "error")
             return render_template("student/ballot.html", student=student, position=position, candidates=candidates, progress=count_progress(student, positions), position_index=position_index, total_positions=len(positions), selected=set(session["ballot"].get(str(position.id), [])))
 
         session["ballot"][str(position.id)] = [int(x) for x in selected_ids]
@@ -150,6 +162,7 @@ def ballot():
     selected_set = set(session["ballot"].get(str(position.id), []))
     return render_template("student/ballot.html", student=student, position=position, candidates=candidates, progress=count_progress(student, positions), position_index=position_index, total_positions=len(positions), selected=selected_set)
 
+
 @app.route("/verify", methods=["GET", "POST"])
 def verify():
     student_id = session.get("student_id")
@@ -162,10 +175,12 @@ def verify():
     ballot_display = []
     for p in positions:
         sel_ids = session["ballot"].get(str(p.id), [])
-        sel_candidates = Candidate.query.filter(Candidate.id.in_(sel_ids)).all() if sel_ids else []
+        sel_candidates = Candidate.query.filter(
+            Candidate.id.in_(sel_ids)).all() if sel_ids else []
         ballot_display.append((p, sel_candidates))
 
-    incomplete = [p.name for p in positions if len(session["ballot"].get(str(p.id), [])) != p.max_selection]
+    incomplete = [p.name for p in positions if len(
+        session["ballot"].get(str(p.id), [])) != p.max_selection]
     if incomplete:
         flash("Please complete all positions before verification.", "error")
         for idx, p in enumerate(positions):
@@ -180,7 +195,8 @@ def verify():
             return redirect(url_for("index"))
         for p, _ in ballot_display:
             for cid in session["ballot"].get(str(p.id), []):
-                db.session.add(Vote(student_id=student.id, candidate_id=int(cid)))
+                db.session.add(
+                    Vote(student_id=student.id, candidate_id=int(cid)))
         student.has_voted = True
         db.session.commit()
         log_action('student', student.id, "Submitted ballot")
@@ -193,6 +209,8 @@ def verify():
     return render_template("student/verify.html", student=student, ballot_display=ballot_display)
 
 # ---------- Admin Auth ----------
+
+
 @app.route("/admin/login", methods=["GET", "POST"])
 def admin_login():
     if request.method == "POST":
@@ -208,6 +226,7 @@ def admin_login():
             flash("Invalid username or password.", "error")
     return render_template("admin/login.html")
 
+
 @app.route("/admin/logout")
 @admin_required
 def admin_logout():
@@ -218,6 +237,8 @@ def admin_logout():
     return redirect(url_for("admin_login"))
 
 # Seed admin (protected)
+
+
 @app.route("/admin/seed_admin")
 @admin_required
 def seed_admin():
@@ -230,7 +251,54 @@ def seed_admin():
     db.session.commit()
     return "Seeded admin user: admin/password"
 
+
+# Create admin (form-based) - allows first admin creation, or logged-in admins to create more
+@app.route("/admin/create", methods=["GET", "POST"])
+def create_admin():
+    # Check if any admins exist
+    existing_admin = Admin.query.first()
+
+    # If admins exist and user is NOT logged in, redirect to login
+    if existing_admin and "admin_id" not in session:
+        flash("Admin accounts already exist. Please log in to create more.", "error")
+        return redirect(url_for("admin_login"))
+
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not username or not password:
+            flash("Username and password are required.", "error")
+            return redirect(url_for("create_admin"))
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "error")
+            return redirect(url_for("create_admin"))
+
+        if len(password) < 6:
+            flash("Password must be at least 6 characters long.", "error")
+            return redirect(url_for("create_admin"))
+
+        existing = Admin.query.filter_by(username=username).first()
+        if existing:
+            flash("Username already exists.", "error")
+            return redirect(url_for("create_admin"))
+
+        admin = Admin(username=username)
+        admin.set_password(password)
+        db.session.add(admin)
+        db.session.commit()
+
+        log_action('admin', admin.id, "Created admin account")
+        flash(f"Admin account '{username}' created successfully!", "success")
+        return redirect(url_for("admin_login"))
+
+    return render_template("admin/create_admin.html", admin_exists=existing_admin is not None)
+
 # Seed positions (protected)
+
+
 @app.route("/admin/seed_positions")
 @admin_required
 def seed_positions():
@@ -264,13 +332,16 @@ def seed_positions():
     for name, max_sel, year, cat, sort in spec:
         exists = Position.query.filter_by(name=name).first()
         if not exists:
-            db.session.add(Position(name=name, max_selection=max_sel, eligible_year=year, category=cat, sort_order=sort))
+            db.session.add(Position(name=name, max_selection=max_sel,
+                           eligible_year=year, category=cat, sort_order=sort))
             added += 1
     if added:
         db.session.commit()
     return f"Seed complete. Added {added} new positions."
 
 # ---------- Admin Dashboard & CRUD ----------
+
+
 @app.route("/admin")
 @admin_required
 def admin_dashboard():
@@ -279,6 +350,7 @@ def admin_dashboard():
     total_candidates = Candidate.query.count()
     total_votes = Vote.query.count()
     return render_template("admin/dashboard.html", total_students=total_students, total_voted=total_voted, total_candidates=total_candidates, total_votes=total_votes)
+
 
 @app.route("/admin/positions", methods=["GET", "POST"])
 @admin_required
@@ -289,14 +361,17 @@ def manage_positions():
         eligible_year = request.form.get("eligible_year") or None
         category = request.form.get("category", "").strip() or None
         sort_order = int(request.form.get("sort_order", 0))
-        pos = Position(name=name, max_selection=max_selection, eligible_year=int(eligible_year) if eligible_year else None, category=category, sort_order=sort_order)
+        pos = Position(name=name, max_selection=max_selection, eligible_year=int(
+            eligible_year) if eligible_year else None, category=category, sort_order=sort_order)
         db.session.add(pos)
         db.session.commit()
         log_action('admin', session.get('admin_id'), f"Added position {name}")
         flash("Position added.", "success")
         return redirect(url_for("manage_positions"))
-    positions = Position.query.order_by(Position.sort_order.asc(), Position.id.asc()).all()
+    positions = Position.query.order_by(
+        Position.sort_order.asc(), Position.id.asc()).all()
     return render_template("admin/manage_positions.html", positions=positions)
+
 
 @app.route("/admin/positions/<int:pid>/delete", methods=["POST"])
 @admin_required
@@ -307,9 +382,11 @@ def delete_position(pid):
         return redirect(url_for("manage_positions"))
     db.session.delete(pos)
     db.session.commit()
-    log_action('admin', session.get('admin_id'), f"Deleted position {pos.name}")
+    log_action('admin', session.get('admin_id'),
+               f"Deleted position {pos.name}")
     flash("Position deleted.", "success")
     return redirect(url_for("manage_positions"))
+
 
 @app.route("/admin/partylists", methods=["GET", "POST"])
 @admin_required
@@ -320,11 +397,13 @@ def manage_partylists():
             pl = Partylist(name=name)
             db.session.add(pl)
             db.session.commit()
-            log_action('admin', session.get('admin_id'), f"Added partylist {name}")
+            log_action('admin', session.get('admin_id'),
+                       f"Added partylist {name}")
             flash("Partylist added.", "success")
         return redirect(url_for("manage_partylists"))
     partylists = Partylist.query.order_by(Partylist.name.asc()).all()
     return render_template("admin/manage_partylist.html", partylists=partylists)
+
 
 @app.route("/admin/partylists/<int:plid>/delete", methods=["POST"])
 @admin_required
@@ -335,14 +414,17 @@ def delete_partylist(plid):
         return redirect(url_for("manage_partylists"))
     db.session.delete(pl)
     db.session.commit()
-    log_action('admin', session.get('admin_id'), f"Deleted partylist {pl.name}")
+    log_action('admin', session.get('admin_id'),
+               f"Deleted partylist {pl.name}")
     flash("Partylist deleted.", "success")
     return redirect(url_for("manage_partylists"))
+
 
 @app.route("/admin/candidates", methods=["GET", "POST"])
 @admin_required
 def manage_candidates():
-    positions = Position.query.order_by(Position.sort_order.asc(), Position.name.asc()).all()
+    positions = Position.query.order_by(
+        Position.sort_order.asc(), Position.name.asc()).all()
     partylists = Partylist.query.order_by(Partylist.name.asc()).all()
     if request.method == "POST":
         first_name = request.form.get("first_name", "").strip()
@@ -361,15 +443,19 @@ def manage_candidates():
             file.save(image_path)
             image_filename = filename
 
-        cand = Candidate(first_name=first_name, last_name=last_name, tagline=tagline, position_id=position_id, partylist_id=partylist_id, image=image_filename)
+        cand = Candidate(first_name=first_name, last_name=last_name, tagline=tagline,
+                         position_id=position_id, partylist_id=partylist_id, image=image_filename)
         db.session.add(cand)
         db.session.commit()
-        log_action('admin', session.get('admin_id'), f"Added candidate {cand.full_name} for position_id {position_id}")
+        log_action('admin', session.get(
+            'admin_id'), f"Added candidate {cand.full_name} for position_id {position_id}")
         flash("Candidate added.", "success")
         return redirect(url_for("manage_candidates"))
 
-    candidates = Candidate.query.order_by(Candidate.last_name.asc(), Candidate.first_name.asc()).all()
+    candidates = Candidate.query.order_by(
+        Candidate.last_name.asc(), Candidate.first_name.asc()).all()
     return render_template("admin/manage_candidates.html", positions=positions, partylists=partylists, candidates=candidates)
+
 
 @app.route("/admin/candidates/<int:cid>/delete", methods=["POST"])
 @admin_required
@@ -380,17 +466,22 @@ def delete_candidate(cid):
         return redirect(url_for("manage_candidates"))
     db.session.delete(cand)
     db.session.commit()
-    log_action('admin', session.get('admin_id'), f"Deleted candidate {cand.full_name}")
+    log_action('admin', session.get('admin_id'),
+               f"Deleted candidate {cand.full_name}")
     flash("Candidate deleted.", "success")
     return redirect(url_for("manage_candidates"))
+
 
 @app.route("/admin/students", methods=["GET"])
 @admin_required
 def manage_students():
-    students = Student.query.order_by(Student.has_voted.desc(), Student.last_name.asc()).all()
+    students = Student.query.order_by(
+        Student.has_voted.desc(), Student.last_name.asc()).all()
     return render_template("admin/manage_students.html", students=students)
 
 # Import CSV
+
+
 @app.route("/admin/import", methods=["GET", "POST"])
 @admin_required
 def admin_import():
@@ -404,15 +495,18 @@ def admin_import():
 
         if dtype == "students":
             summary = import_students(file, admin_id=admin_id)
-            flash(f"Imported {summary['created']} students; skipped {len(summary['skipped'])}.", "success")
+            flash(
+                f"Imported {summary['created']} students; skipped {len(summary['skipped'])}.", "success")
         elif dtype == "candidates":
             summary = import_candidates(file, admin_id=admin_id)
-            flash(f"Imported {summary['created']} candidates; skipped {len(summary['skipped'])}.", "success")
+            flash(
+                f"Imported {summary['created']} candidates; skipped {len(summary['skipped'])}.", "success")
         else:
             flash("Unknown import type.", "error")
         return redirect(url_for("admin_import"))
 
     return render_template("admin/import_data.html")
+
 
 @app.route("/admin/results")
 @admin_required
@@ -434,14 +528,17 @@ def admin_results():
     partylist_votes = []
     pls = Partylist.query.order_by(Partylist.name.asc()).all()
     for pl in pls:
-        total = db.session.query(func.count(Vote.id)).join(Candidate).filter(Candidate.partylist_id == pl.id).scalar() or 0
+        total = db.session.query(func.count(Vote.id)).join(
+            Candidate).filter(Candidate.partylist_id == pl.id).scalar() or 0
         partylist_names.append(pl.name)
         partylist_votes.append(total)
-    indep_total = db.session.query(func.count(Vote.id)).join(Candidate).filter(Candidate.partylist_id == None).scalar() or 0
+    indep_total = db.session.query(func.count(Vote.id)).join(
+        Candidate).filter(Candidate.partylist_id == None).scalar() or 0
     partylist_names.append("Independent")
     partylist_votes.append(indep_total)
 
     return render_template("admin/results.html", results=results_data, partylist_names=partylist_names, partylist_votes=partylist_votes)
+
 
 @app.route("/admin/export_excel")
 @admin_required
@@ -453,17 +550,21 @@ def export_excel():
         candidates = Candidate.query.filter_by(position_id=p.id).all()
         for c in candidates:
             vcount = Vote.query.filter_by(candidate_id=c.id).count()
-            rows.append({"Position": p.name, "Candidate": f"{c.first_name} {c.last_name}", "Partylist": (c.partylist.name if c.partylist_id else "Independent"), "Votes": vcount})
-    df = pd.DataFrame(rows, columns=["Position", "Candidate", "Partylist", "Votes"])
+            rows.append({"Position": p.name, "Candidate": f"{c.first_name} {c.last_name}", "Partylist": (
+                c.partylist.name if c.partylist_id else "Independent"), "Votes": vcount})
+    df = pd.DataFrame(
+        rows, columns=["Position", "Candidate", "Partylist", "Votes"])
     export_path = os.path.join(os.path.dirname(__file__), "itso_results.xlsx")
     df.to_excel(export_path, index=False)
     return send_file(export_path, as_attachment=True, download_name="itso_results.xlsx")
+
 
 @app.route("/admin/logs")
 @admin_required
 def admin_logs():
     logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(500).all()
     return render_template("admin/audit_logs.html", logs=logs)
+
 
 # ----------------------
 # Run App

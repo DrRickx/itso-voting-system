@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Create Admin Account - ITSO Voting System</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h1 class="text-3xl font-bold text-center mb-2 text-blue-700">
+        ITSO Admin
+      </h1>
+      <p class="text-center text-gray-600 mb-6">Create Admin Account</p>
+
+      <!-- Flash messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="mb-4">
+        {% for category, message in messages %}
+        <p class="text-red-500 text-sm">{{ message }}</p>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %} {% if admin_exists %}
+      <div
+        class="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4"
+      >
+        <p class="text-sm">
+          An admin account already exists.
+          <a href="{{ url_for('admin_login') }}" class="underline font-semibold"
+            >Go to login</a
+          >
+        </p>
+      </div>
+      {% else %}
+      <form method="POST" class="space-y-4">
+        <div>
+          <label class="block font-semibold mb-1">Username</label>
+          <input
+            type="text"
+            name="username"
+            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+            required
+            placeholder="Enter username"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Password</label>
+          <input
+            type="password"
+            name="password"
+            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+            required
+            placeholder="Enter password (min 6 characters)"
+          />
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Confirm Password</label>
+          <input
+            type="password"
+            name="confirm_password"
+            class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+            required
+            placeholder="Confirm password"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="w-full bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 rounded transition"
+        >
+          Create Admin Account
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-gray-600 mt-4">
+        Already have an account?
+        <a
+          href="{{ url_for('admin_login') }}"
+          class="text-blue-700 hover:underline"
+          >Log in here</a
+        >
+      </p>
+      {% endif %}
+    </div>
+  </body>
+</html>
